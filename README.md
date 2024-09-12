@@ -21,23 +21,42 @@ I'm a career software engineer with a computer science background, but do not wo
 Assuming python and CUDA are installed, you can ensure necessary packages are available via `pip install -r requirements.txt`
 
 # Rectified Flow
+
 ## 1-Channel
+
+### MNIST
+
 <div align="center">
   <img src="https://github.com/user-attachments/assets/1d6c5e94-299e-41d8-8cc5-6bc4718f3dbd" />
-  <img src="https://github.com/user-attachments/assets/088e0ed2-5fda-4014-8b14-5be3aa0eac1d" /><br />
-  <p><strong>Left</strong>: MNIST, <strong>Right</strong>: Fashion MNIST</p>
+  <img src="https://github.com/user-attachments/assets/108c1b2a-35ed-4cfe-af02-4c0eb5765915" /><br />
+  Trained for 100 epochs in ~45 minutes.
 </div>
 
-Both trained for 100 epochs in ~45 minutes.
+### Fashion MNIST
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/088e0ed2-5fda-4014-8b14-5be3aa0eac1d" />
+  <img src="https://github.com/user-attachments/assets/08c6a60e-ee2f-4642-84ec-5fb8d0efc72a" /><br />
+  Trained for 100 epochs in ~45 minutes.
+</div>
 
 ## 3-Channel
+
+### CIFAR-10
+
 <div align="center">
   <img src="https://github.com/user-attachments/assets/e8d5341a-f63e-4a13-a95b-0d9ef64d4dac" />
-  <img src="https://github.com/user-attachments/assets/7fafee17-2202-4763-82fd-c5cff4b69515" /><br />
-  <p><strong>Left</strong>: CIFAR-10, <strong>Right</strong>: CIFAR-100</p>
+  <img src="https://github.com/user-attachments/assets/82b4225f-8b8c-4889-8ab8-5a882211d99a" /><br />
+  Trained for 100 epochs in ~3 hours.
 </div>
 
-Left trained for 100 epochs in 3 hours, right trained for 250 epochs in 7.5 hours
+### CIFAR-100
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/7fafee17-2202-4763-82fd-c5cff4b69515" />
+  <img src="https://github.com/user-attachments/assets/499631dc-b8b8-4ce7-985c-31f41d258c0e" /><br />
+  Trained for 250 epochs in ~7.5 hours.
+</div>
 
 ### Training Commands
 
