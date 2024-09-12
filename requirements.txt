@@ -1,0 +1,6 @@
+torch
+torchvision
+pillow
+wandb
+datasets
+hf_transfer
