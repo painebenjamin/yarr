@@ -16,6 +16,10 @@ I'm a career software engineer with a computer science background, but do not wo
 | ----- | ------- | ----- |
 | [Rectified Flow](#rectified-flow) | Image Synthesis | [Scaling Rectified Flow Transformers for High-Resolution Image Synthesis, Esser et al. (2024)](https://arxiv.org/pdf/2403.03206) |
 
+# Prerequisites
+
+Assuming python and CUDA are installed, you can ensure necessary packages are available via `pip install -r requirements.txt`
+
 # Rectified Flow
 ## 1-Channel
 <div align="center">
