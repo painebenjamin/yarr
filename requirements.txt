@@ -1,6 +1,7 @@
-torch
-torchvision
-pillow
-wandb
+click
 datasets
 hf_transfer
+pillow
+torch
+torchvision
+wandb
