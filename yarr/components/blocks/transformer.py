@@ -9,8 +9,8 @@ from ..modules import (
     Module,
     AdaptiveModulator,
     Attention,
-    FeedForward
 )
+from ..layers import GatedMultiLayerPerceptron
 
 __all__ = ["TransformerBlock"]
 
@@ -27,7 +27,6 @@ class TransformerBlock(Module):
         multiple_of: int,
         norm_epsilon: float = 1e-5,
         hidden_dim_multiplier: int = 4,
-        ffn_dim_multiplier: Optional[int] = None,
         layer_id: Optional[int] = None,
     ) -> None:
         """
@@ -36,7 +35,6 @@ class TransformerBlock(Module):
         :param multiple_of: Multiple of the input tensor dimension.
         :param norm_epsilon: Epsilon value for normalization layers.
         :param hidden_dim_multiplier: Multiplier for the hidden dimension in the feed-forward layer.
-        :param ffn_dim_multiplier: Multiplier for the feed-forward layer dimension.
         :param layer_id: Identifier of the layer. Optional.
         """
         super(TransformerBlock, self).__init__()
@@ -45,11 +43,10 @@ class TransformerBlock(Module):
         self.norm_epsilon = norm_epsilon
 
         self.attention = Attention(dim, num_heads)
-        self.feed_forward = FeedForward(
-            dim=dim,
+        self.feed_forward = GatedMultiLayerPerceptron(
+            input_dim=dim,
             hidden_dim=dim * hidden_dim_multiplier,
             multiple_of=multiple_of,
-            ffn_dim_multiplier=ffn_dim_multiplier
         )
         self.modulator = AdaptiveModulator(
             hidden_size=dim,

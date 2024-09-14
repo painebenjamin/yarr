@@ -3,8 +3,6 @@
 import torch
 import torch.nn as nn
 
-from typing import Optional
-
 from ..components import (
     Module,
     ModulatingFinalLayer,
@@ -44,7 +42,6 @@ class DiffusionTransformer(Module):
         num_layers: int=5,
         num_heads: int=16,
         multiple_of: int=256,
-        ffn_dim_multiplier: Optional[int]=None,
         norm_epsilon: float=1e-5,
         label_dropout: float=0.1,
         num_classes: int=10,
@@ -58,7 +55,6 @@ class DiffusionTransformer(Module):
         :param num_layers: The number of transformer layers, for example 5.
         :param num_heads: The number of attention heads, for example 16.
         :param multiple_of: The dimension must be a multiple of this number, for example 256.
-        :param ffn_dim_multiplier: The dimension of the feedforward network, for example 4.
         :param norm_epsilon: The epsilon value for normalization layers, for example 1e-5.
         :param label_dropout: The dropout rate for the label embedding, for example 0.1.
         :param num_classes: The number of classes in the dataset, for example 10 (MNIST, CIFAR-10),
@@ -96,7 +92,6 @@ class DiffusionTransformer(Module):
                 num_heads=num_heads,
                 multiple_of=multiple_of,
                 norm_epsilon=norm_epsilon,
-                ffn_dim_multiplier=ffn_dim_multiplier,
                 layer_id=i
             )
             for i in range(num_layers)

@@ -2,5 +2,5 @@
 
 from .attention import *
 from .base import *
-from .feed_forward import *
+from .mixed_precision import *
 from .modulator import *

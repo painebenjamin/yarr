@@ -23,6 +23,7 @@ class AdaptiveModulator(Module):
     def __init__(
         self,
         hidden_size: int,
+        cond_size: int = 1024,
         num_modulations: int = 2,
         modulate_bias: bool = True
     ) -> None:
@@ -37,7 +38,7 @@ class AdaptiveModulator(Module):
         self.adaptive_modulator = nn.Sequential(
             nn.SiLU(),
             nn.Linear(
-                min(hidden_size, 1024),
+                min(cond_size, hidden_size),
                 num_modulations * hidden_size,
                 bias=modulate_bias
             )

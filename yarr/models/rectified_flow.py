@@ -33,7 +33,6 @@ class RectifiedFlow(Module):
         num_layers: int=5,
         num_heads: int=16,
         multiple_of: int=256,
-        ffn_dim_multiplier: Optional[int]=None,
         norm_epsilon: float=1e-5,
         label_dropout: float=0.1,
         num_classes: int=10,
@@ -47,7 +46,6 @@ class RectifiedFlow(Module):
         :param num_layers: The number of layers, for example 5.
         :param num_heads: The number of heads, for example 16.
         :param multiple_of: The multiple of the model dimension, for example 256.
-        :param ffn_dim_multiplier: The multiplier for the feedforward network dimension, for example 4.
         :param norm_epsilon: The epsilon value for normalization, for example 1e-5.
         :param label_dropout: The dropout rate for the labels, for example 0.1.
         :param num_classes: The number of classes, for example 10 for MNIST or CIFAR-10, 100 for CIFAR-100, etc.
@@ -62,7 +60,6 @@ class RectifiedFlow(Module):
             num_layers=num_layers,
             num_heads=num_heads,
             multiple_of=multiple_of,
-            ffn_dim_multiplier=ffn_dim_multiplier,
             norm_epsilon=norm_epsilon,
             label_dropout=label_dropout,
             num_classes=num_classes,

@@ -12,6 +12,14 @@ __all__ = ["FinalLayer", "ModulatingFinalLayer"]
 class FinalLayer(Module):
     """
     A simple final layer that applies a layer normalization and a linear layer.
+
+    Output follows the formula:
+
+        f(x) = W * norm(x) + b
+
+    Where W is the weight matrix, b is the bias vector, and norm is the formula:
+
+        norm(x) = (x - mean(x)) / sqrt(var(x) + epsilon)
     """
     def __init__(
         self,
@@ -50,6 +58,15 @@ class FinalLayer(Module):
 class ModulatingFinalLayer(FinalLayer):
     """
     A final layer that applies a layer normalization, a linear layer, and a modulator.
+
+    Output follows the formula:
+
+        f(x, y) = W * norm(x * (1 + y_0) + y_1) + b
+
+    Where W is the weight matrix, b is the bias vector, y_0 is the shift modulation,
+    y_1 is the scale modulation, and norm is the formula:
+
+        norm(x) = (x - mean(x)) / sqrt(var(x) + epsilon)
     """
     def __init__(
         self,
