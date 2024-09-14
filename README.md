@@ -22,6 +22,8 @@ Assuming python and CUDA are installed, you can ensure necessary packages are av
 
 # Rectified Flow
 
+Models and optimizers available on [HuggingFace](https://huggingface.co/benjamin-paine/yarr/tree/main/rectified-flow).
+
 ## 1-Channel
 
 ### MNIST
