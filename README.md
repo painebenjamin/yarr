@@ -18,7 +18,9 @@ I'm a career software engineer with a computer science background, but do not wo
 
 # Prerequisites
 
-Assuming python and CUDA are installed, you can ensure necessary packages are available via `pip install -r requirements.txt`
+Assuming python and CUDA are installed, you can ensure necessary packages are available via `pip install -r requirements.txt`.
+
+You will also need [ffmpeg](https://www.ffmpeg.org/) installed.
 
 # Rectified Flow
 
