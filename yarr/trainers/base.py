@@ -133,11 +133,9 @@ class Trainer:
         raise NotImplementedError
 
     @torch.no_grad()
-    def evaluate(self, epoch: int=0) -> None:
+    def evaluate(self) -> None:
         """
         Evaluate the model.
-
-        :param epoch: The epoch number at the time of evaluation
         """
         raise NotImplementedError
 
@@ -200,11 +198,16 @@ class Trainer:
                 return True
         return False
 
-    def __call__(self, num_epochs: int=10) -> None:
+    def __call__(
+        self,
+        num_epochs: int=10,
+        evaluate_nth_batch: Optional[int]=None,
+    ) -> None:
         """
         Train the model.
 
         :param num_epochs: The number of epochs to train for
+        :param evaluate_nth_batch: Evaluate the model every nth batch
         """
         if self.use_wandb:
             wandb.init(
@@ -228,7 +231,7 @@ class Trainer:
         self.model.train()
 
         for epoch in tqdm(range(num_epochs), unit="epoch", desc="Training"):
-            for batch in tqdm(self.dataloader, desc=f"Epoch {epoch+1}/{num_epochs}"):
+            for i, batch in enumerate(tqdm(self.dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")):
                 self.optimizer.zero_grad()
                 loss = self.loss(self.align(batch))
                 loss.backward() # type: ignore[no-untyped-call]
@@ -239,8 +242,13 @@ class Trainer:
 
                 scheduler.step()
 
+                if evaluate_nth_batch is not None and i % evaluate_nth_batch == 0 and i > 0:
+                    self.model.eval()
+                    self.evaluate()
+                    self.model.train()
+
             self.model.eval()
-            self.evaluate(epoch + self.total_epochs)
+            self.evaluate()
             self.model.train()
 
         self.total_epochs += num_epochs

@@ -1,6 +1,7 @@
 click
 datasets
 hf_transfer
+moviepy
 pillow
 torch
 torchvision

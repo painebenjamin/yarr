@@ -1,6 +1,54 @@
+import numpy as np
+
+from typing import List, Optional
 from typing_extensions import Literal
 
-__all__ = ["find_nearest_multiple", "get_normalized_dim"]
+from moviepy.editor import ImageSequenceClip # type: ignore[import-untyped]
+from moviepy.video.io.ffmpeg_writer import ffmpeg_write_video # type: ignore[import-untyped]
+from PIL import Image
+
+__all__ = [
+    "write_video",
+    "find_nearest_multiple",
+    "get_normalized_dim"
+]
+
+def write_video(
+    frames: List[Image.Image],
+    path: str,
+    fps: int,
+    crf: Optional[int]=18,
+    ffmpeg_params: List[str]=[],
+) -> None:
+    """
+    Write a list of frames to a video file
+
+    :param frames: The list of frames to be written
+    :param path: The name of the video file
+    :param fps: The frames per second of the video
+    :param codec: The codec to be used for encoding the video. Default is "libx264"
+    :param bitrate: The bitrate of the video. Default is "5M"
+    :param preset: The preset of the video. Default is "medium"
+    :param ffmpeg_params: Additional parameters to be passed to ffmpeg
+    """
+    if not path.endswith(".mp4"):
+        path += ".mp4"
+
+    if "-crf" not in ffmpeg_params and crf is not None:
+        ffmpeg_params.extend(["-crf", str(crf)])
+
+    clip = ImageSequenceClip(
+        [np.array(frame) for frame in frames],
+        fps=fps
+    )
+    ffmpeg_write_video(
+        clip,
+        path,
+        fps,
+        ffmpeg_params=ffmpeg_params,
+        verbose=False,
+        logger=None,
+    )
 
 def find_nearest_multiple(
     input_number: int,

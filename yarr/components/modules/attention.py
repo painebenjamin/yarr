@@ -240,7 +240,7 @@ class DoubleAttention(Attention):
         output = output.permute(0, 2, 1, 3)
         output = output.flatten(-2)
 
-        c, x = output.split([s_1, s_2], dim=1)
+        c, x = output.split([s_1, s_2], dim=1) # type: ignore[no-untyped-call]
         c = self.output(c)
         x = self.second_output(x)
 

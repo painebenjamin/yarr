@@ -6,9 +6,10 @@ import torch
 import wandb
 import numpy as np
 
-from typing import Any, Optional
+from typing import Any, Optional, Dict, List
 from math import sqrt
 from PIL import Image
+
 from torchvision.utils import make_grid # type: ignore[import-untyped]
 from torchvision.transforms import ( # type: ignore[import-untyped]
     Pad,
@@ -20,6 +21,7 @@ from torchvision.transforms import ( # type: ignore[import-untyped]
 
 from .base import Trainer
 from ..models import RectifiedFlow
+from ..utilities import write_video
 
 DEFAULT_LEARNING_RATE = 1e-3
 DEFAULT_NUM_EPOCHS = 100
@@ -55,6 +57,13 @@ class RectifiedFlowTrainer(Trainer):
         """
         return self.project_name == "rectified-flow-cifar100"
 
+    @property
+    def imagenet_1k_32(self) -> bool:
+        """
+        :return: Whether the dataset is ImageNet-1k 32x32.
+        """
+        return self.project_name == "rectified-flow-imagenet-1k-32"
+
     def transform(self, datum: torch.Tensor) -> torch.Tensor:
         """
         Transform a single datum (i.e. prepare it for the model).
@@ -63,7 +72,7 @@ class RectifiedFlowTrainer(Trainer):
         :return: The transformed datum.
         """
         if not hasattr(self, "_transform"):
-            if self.cifar_10 or self.cifar_100:
+            if self.cifar_10 or self.cifar_100 or self.imagenet_1k_32:
                 self._transform = Compose([
                     RandomCrop(32),
                     RandomHorizontalFlip(),
@@ -113,11 +122,9 @@ class RectifiedFlowTrainer(Trainer):
             raise ValueError(f"Unexpected datum format: {e}\n{datum}")
 
     @torch.no_grad()
-    def evaluate(self, epoch: int=0) -> None:
+    def evaluate(self) -> None:
         """
         Evaluate the model on the validation dataset.
-
-        :param epoch: The current epoch.
         """
         # Log loss bins to weights and biases
         if self.use_wandb:
@@ -133,98 +140,122 @@ class RectifiedFlowTrainer(Trainer):
         # Make samples
         generator = torch.Generator()
         generator.manual_seed(42)
-        cond = torch.arange(0, self.num_validation_samples) % self.model.num_classes
         noise = torch.randn(
             (self.num_validation_samples, self.model.in_channels, self.model.input_size, self.model.input_size),
             generator=generator
         )
-        images = self.model.sample(noise.to(self.device), cond.to(self.device))
 
-        frames = []
-        for image in images:
-            # denormalize
-            image = (image * 0.5) + 0.5
-            image = image.clamp(0, 1)
-            image = make_grid(image, nrow=int(sqrt(self.num_validation_samples)))
-            image = image.permute(1, 2, 0).detach().cpu().numpy()
-            image = (image * 255).astype(np.uint8)
-            frames.append(Image.fromarray(image))
+        if self.imagenet_1k_32:
+            conds = [
+                torch.arange(self.num_validation_samples * i, self.num_validation_samples * (i + 1)) % self.model.num_classes
+                for i in range(10)
+            ]
+        else:
+            conds = [torch.arange(0, self.num_validation_samples) % self.model.num_classes]
 
-        if not hasattr(self, "final_frames"):
-            self.final_frames = []
+        for i, cond in enumerate(conds):
+            images = self.model.sample(noise.to(self.device), cond.to(self.device))
 
-        # Save the samples for this epoch as a gif
-        frames[0].save(
-            os.path.join(self.output_dir, "sampling.gif"),
-            save_all=True,
-            append_images=frames[1:] + [frames[-1]] * 20, # hold the last frame for 2 sec
-            duration=100,
-            loop=0
-        )
-        # Save the completed samples for all epochs as a gif
-        self.final_frames.append(frames[-1])
-        self.final_frames[0].save(
-            os.path.join(self.output_dir, "samples.gif"),
-            save_all=True,
-            append_images=self.final_frames[1:] + [self.final_frames[-1]] * 20, # hold the last frame for 2 sec
-            duration=100,
-            loop=0
-        )
-        # Log final frame
-        if self.use_wandb:
-            wandb.log({"samples": wandb.Image(self.final_frames[-1])})
+            frames = []
+            for image in images:
+                # denormalize
+                image = (image * 0.5) + 0.5
+                image = image.clamp(0, 1)
+                image = make_grid(image, nrow=int(sqrt(self.num_validation_samples)))
+                image = image.permute(1, 2, 0).detach().cpu().numpy()
+                image = (image * 255).astype(np.uint8)
+                frames.append(Image.fromarray(image))
+
+            if not hasattr(self, "final_frames"):
+                self.final_frames: Dict[int, List[Image.Image]] = {}
+
+            if i not in self.final_frames:
+                self.final_frames[i] = []
+
+            # Save the sampling images as an mp4
+            write_video(
+                frames + [frames[-1]] * 20, # hold the last frame for 2 sec
+                os.path.join(self.output_dir, f"sampling_{i}.mp4"),
+                fps=10
+            )
+            # Save the completed samples as an mp4
+            self.final_frames[i].append(frames[-1])
+            write_video(
+                self.final_frames[i] + [self.final_frames[i][-1]] * 20, # hold the last frame for 2 sec
+                os.path.join(self.output_dir, f"samples_{i}.mp4"),
+                fps=10
+            )
+            # Log final frame
+            if self.use_wandb:
+                wandb.log({f"samples_{i}": wandb.Image(self.final_frames[i][-1])})
 
 @click.command()
 @click.option("-lr", "--learning-rate", default=DEFAULT_LEARNING_RATE, help="Learning rate for the optimizer.", show_default=True)
 @click.option("-e", "--num-epochs", default=DEFAULT_NUM_EPOCHS, help="Number of epochs to train the model.", show_default=True)
 @click.option("-w", "--num-workers", default=DEFAULT_WORKERS, help="Number of workers for the data loader.", show_default=True)
 @click.option("-b", "--batch-size", default=DEFAULT_BATCH_SIZE, help="Batch size for training.", show_default=True)
+@click.option("--evaluate-nth-batch", type=int, default=None, help="Evaluate the model every nth batch as opposed to only between epochs.", show_default=True)
 @click.option("--wandb-entity", default=None, help="Weights and Biases entity.", type=str)
 @click.option("--resume", is_flag=True, help="Resume training from the latest checkpoint.")
 @click.option("--fashion-mnist", is_flag=True, help="Use Fashion MNIST dataset instead of MNIST.")
 @click.option("--cifar-10", is_flag=True, help="Use CIFAR-10 dataset instead of MNIST.")
 @click.option("--cifar-100", is_flag=True, help="Use CIFAR-100 dataset instead of MNIST.")
+@click.option("--imagenet-1k-32", is_flag=True, help="Use ImageNet-1k 32x32 dataset instead of MNIST.")
 def main(
     learning_rate: float=DEFAULT_LEARNING_RATE,
     num_epochs: int=DEFAULT_NUM_EPOCHS,
     num_workers: int=DEFAULT_WORKERS,
     batch_size: int=DEFAULT_BATCH_SIZE,
+    evaluate_nth_batch: Optional[int]=None,
     wandb_entity:Optional[str]=None,
     resume: bool=False,
     fashion_mnist: bool=False,
     cifar_10: bool=False,
     cifar_100: bool=False,
+    imagenet_1k_32: bool=False,
 ) -> None:
     """
-    Train a Rectified Flow model on either MNIST, CIFAR-10, or CIFAR-100.
+    Train a Rectified Flow model on either MNIST, Fashion MNIST,
+    CIFAR-10, CIFAR-100, or ImageNet-1k 32x32 datasets.
     """
+    large = False
+    extra_large = False
+    if imagenet_1k_32:
+        if cifar_10 or cifar_100 or fashion_mnist:
+            print("Using ImageNet-1k 32x32 dataset, --cifar-10, --cifar-100, and --fashion-mnist flags will be ignored.")
+        large = True
+        extra_large = True
+        cifar_10 = False
+        cifar_100 = False
+        fashion_mnist = False
     if cifar_100:
-        cifar = True
         if cifar_10 or fashion_mnist:
             print("Using CIFAR-100 dataset, --cifar-10 and --fashion-mnist flags will be ignored.")
+        large = True
         cifar_10 = False
         fashion_mnist = False
     elif cifar_10:
-        cifar = True
         if fashion_mnist:
             print("Using CIFAR-10 dataset, --fashion-mnist flag will be ignored.")
+        large = True
         cifar_100 = False
         fashion_mnist = False
-    else:
-        cifar = False
 
     model = RectifiedFlow(
-        in_channels=3 if cifar else 1,
-        out_channels=3 if cifar else 1,
-        dim=256 if cifar else 64,
-        num_layers=10 if cifar else 6,
-        num_heads=8 if cifar else 4,
+        in_channels=3 if large else 1,
+        out_channels=3 if large else 1,
+        dim=512 if extra_large else 256 if large else 64,
+        num_layers=12 if extra_large else 10 if large else 6,
+        num_heads=8 if large else 4,
         input_size=32,
-        num_classes=100 if cifar_100 else 10,
+        num_classes=1000 if imagenet_1k_32 else 100 if cifar_100 else 10,
         patch_size=2,
     )
 
-    if cifar_100:
+    if imagenet_1k_32:
+        training_dataset = "benjamin-paine/imagenet-1k-32x32"
+        project_name = "rectified-flow-imagenet-1k-32"
+    elif cifar_100:
         training_dataset = "uoft-cs/cifar100"
         project_name = "rectified-flow-cifar100"
     elif cifar_10:
@@ -250,7 +281,10 @@ def main(
     if resume:
         trainer.resume()
 
-    trainer(num_epochs=num_epochs)
+    trainer(
+        num_epochs=num_epochs,
+        evaluate_nth_batch=evaluate_nth_batch,
+    )
 
 if __name__ == "__main__":
     main()
